@@ -50,8 +50,8 @@ void Color::GenerateHSLFromRGB(){
 	if (h < 0) {
 		h = h + 360;
 	}
-	this->l /= 100;
-	this->s /= 100;
+	l /= 100;
+	s /= 100;
 }
 
 void Color::GenerateRGBFromHSL(){
@@ -94,9 +94,9 @@ void Color::GenerateRGBFromHSL(){
 	}
 
 	float m = l - c/2;
-	this->r = tempColor.r + m;
-	this->g = tempColor.g + m;
-	this->b = tempColor.b + m;
+	r = tempColor.r + m;
+	g = tempColor.g + m;
+	b = tempColor.b + m;
 
 }
 Color::Color(const std::string &argument){
