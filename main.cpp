@@ -7,67 +7,9 @@
 #include <algorithm>
 #include <regex>
 
-class Color{
-	public:
-	uint8_t r;
-	uint8_t g;
-	uint8_t b;
-	uint8_t a;
+#include "color.hpp"
 
-	Color():r(0),g(0),b(0),a(0){}
-	Color(std::string argument){
-
-		std::regex firstColorType("^([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$"); // ff0000ff
-		std::regex secondColorType("^([0-9]{1,3},){3}[0-9]{1,3}$"); // 255,0,0,255
-		
-		auto words_begin = std::sregex_iterator(argument.begin(), argument.end(), firstColorType);
-		auto words_end = std::sregex_iterator();
-
-		if(std::distance(words_begin, words_end)){
-			std::smatch match = *words_begin;
-			std::string matchStr = match.str();
-			if (matchStr.size() == 3){
-				r = strtoul(matchStr.substr(-1,1).c_str(), NULL, 16);
-				g = strtoul(matchStr.substr(1,1).c_str(), NULL, 16);
-				b = strtoul(matchStr.substr(2,1).c_str(), NULL, 16);
-				a = 255;
-			}
-			if (matchStr.size() == 6){
-				r = strtoul(matchStr.substr(0,2).c_str(), NULL, 16);
-				g = strtoul(matchStr.substr(2,2).c_str(), NULL, 16);
-				b = strtoul(matchStr.substr(4,2).c_str(), NULL, 16);
-				a = 255;
-			}
-			if (matchStr.size() == 8){
-				r = strtoul(matchStr.substr(0,2).c_str(), NULL, 16);
-				g = strtoul(matchStr.substr(2,2).c_str(), NULL, 16);
-				b = strtoul(matchStr.substr(4,2).c_str(), NULL, 16);
-				a = strtoul(matchStr.substr(6,2).c_str(), NULL, 16);
-			}
-		}
-		words_begin = std::sregex_iterator(argument.begin(), argument.end(), secondColorType);
-
-		if(std::distance(words_begin, words_end)){
-			std::smatch match = *words_begin;
-			std::string matchStr = match.str();
-			std::vector<uint8_t> rgba;
-			std::string number;
-			std::stringstream matchStream(matchStr);
-
-			while(std::getline(matchStream, number, ',')){
-				rgba.push_back(std::stoi(number));
-			}
-
-			this->r = rgba[0];
-			this->g = rgba[1];
-			this->b = rgba[2];
-			this->a = rgba[3];
-		}
-	}
-
-};
-
-Color GetAverageFromList(std::list<Color> colorList){
+Color CreateAverageFromList(const std::list<Color> &colorList){
 	Color returnColor;
 	std::size_t colorCount = colorList.size();
 	for (auto color : colorList){
@@ -76,9 +18,59 @@ Color GetAverageFromList(std::list<Color> colorList){
 		returnColor.b = color.b/colorCount;
 		returnColor.a = color.a/colorCount;
 	}
+
+	returnColor.GenerateHSLFromRGB();
 	return returnColor;
 }
 
+Color CreateFromLowestValues(const std::list<Color> &colorList){
+	Color returnColor;
+	returnColor.r = UINT8_MAX;
+	returnColor.g = UINT8_MAX;
+	returnColor.b = UINT8_MAX;
+	returnColor.a = UINT8_MAX;
+	for (auto color : colorList){
+		returnColor.r = returnColor.r > color.r ? color.r : returnColor.r;
+		returnColor.g = returnColor.g > color.g ? color.g : returnColor.g;
+		returnColor.b = returnColor.b > color.b ? color.b : returnColor.b;
+		returnColor.a = returnColor.a > color.a ? color.a : returnColor.a;
+	}
+
+	returnColor.GenerateHSLFromRGB();
+	return returnColor;
+}
+
+Color CreateFromHighestValues(const std::list<Color> &colorList){
+
+	Color returnColor;
+	returnColor.r = 0;
+	returnColor.g = 0;
+	returnColor.b = 0;
+	returnColor.a = 0;
+	for (auto color : colorList){
+		returnColor.r = returnColor.r < color.r ? color.r : returnColor.r;
+		returnColor.g = returnColor.g < color.g ? color.g : returnColor.g;
+		returnColor.b = returnColor.b < color.b ? color.b : returnColor.b;
+		returnColor.a = returnColor.a < color.a ? color.a : returnColor.a;
+	}
+	returnColor.GenerateHSLFromRGB();
+	return returnColor;
+}
+
+Color GetAverageSaturation(const std::list<Color> &colorList){
+
+	Color returnColor;
+	float average = 0;
+	std::size_t colorCount = colorList.size();
+	for (auto color : colorList){
+		average += color.s/colorCount;
+	}
+	returnColor.h = average;
+	returnColor.l = 1;
+	returnColor.s = 1;
+	returnColor.GenerateRGBFromHSL();
+	return returnColor;
+}
 
 int main(int argc, char *argv[]){
 
@@ -99,15 +91,17 @@ int main(int argc, char *argv[]){
 	std::string filename = "colors.txt";
 	std::fstream file(filename, std::fstream::in);
 
-	if (!file.is_open()){
+	if (file.is_open()){
+		std::string line;
+		while(std::getline(file, line)){
+			colorData.emplace_back(line);
+		}
+		file.close();
+	}
+	else{
 		std::cerr<<"Couldnt open colors.txt"<<std::endl;
-		return 1;
 	}
 	
-	std::string line;
-	while(std::getline(file, line)){
-		colorData.emplace_back(line);
-	}
 
 	// Reading data from arguments
 	
@@ -116,19 +110,24 @@ int main(int argc, char *argv[]){
 	}
 
 
-	for(auto color : colorData){
-		std::cout<<static_cast<int>(color.r)<<std::endl;
-		std::cout<<static_cast<int>(color.g)<<std::endl;
-		std::cout<<static_cast<int>(color.b)<<std::endl;
-		std::cout<<static_cast<int>(color.a)<<std::endl;
-		std::cout<<"----------------"<<std::endl;
+	if (colorData.size() == 0){
+		std::cerr<<"You have to provide colors in form of a file or program arguments "<<std::endl;
+		return 1;
 	}
-	if (std::string(argv[2]) == "lowest"){ }
-	if (std::string(argv[2]) == "mix"){}
-	if (std::string(argv[2]) == "mix"){}
-	if (std::string(argv[2]) == "mix"){}
 
-	file.close();
+	if (std::string(argv[2]) == "lowest"){ 
+		std::cout<<CreateFromLowestValues(colorData)<<std::endl;
+	}
+	if (std::string(argv[2]) == "highest"){
+		std::cout<<CreateFromHighestValues(colorData)<<std::endl;
+	}
+	if (std::string(argv[2]) == "mix"){
+		std::cout<<CreateAverageFromList(colorData)<<std::endl;
+	}
+	if (std::string(argv[2]) == "mix-saturate"){
+		std::cout<<GetAverageSaturation(colorData)<<std::endl;
+	}
+
 
 	return 0;
 }
