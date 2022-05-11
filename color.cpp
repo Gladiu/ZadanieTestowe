@@ -114,7 +114,7 @@ Color::Color(const std::string &argument){
 		std::smatch match = *wordsBeginFirstMatch;
 		std::string matchStr = match.str();
 		if (matchStr.size() == 3){
-			r = strtoul(matchStr.substr(-1,1).c_str(), NULL, 16);
+			r = strtoul(matchStr.substr(0,1).c_str(), NULL, 16);
 			g = strtoul(matchStr.substr(1,1).c_str(), NULL, 16);
 			b = strtoul(matchStr.substr(2,1).c_str(), NULL, 16);
 			a = 255;
@@ -153,7 +153,7 @@ Color::Color(const std::string &argument){
 
 	if(!std::distance(wordsBeginFirstMatch, wordsEndFirstMatch)
 	   and !std::distance(wordsBeginSecondMatch, wordsEndSecondMatch)){
-		std::cerr<<"Invalid Color Format"<<std::endl;
+		std::cerr<<"Invalid Color Format: "<<argument<<std::endl;
 	}
 	GenerateHSLFromRGB();
 }
@@ -163,7 +163,7 @@ std::ostream& operator<<(std::ostream& os, const Color& color){
 	os<<"Green: "<<color.g<<std::endl;
 	os<<"Blue: "<<color.b<<std::endl;
 	os<<"Alpha: "<<color.a<<std::endl;
-	os<<"Hex: "<<"#"<<std::hex<<color.r<<color.g<<color.b<<color.a<<std::endl;
+	os<<"Hex: "<<"#"<<std::hex<<color.r<<" "<<color.g<<" "<<color.b<<" "<<color.a<<std::endl;
 	os<<"Hue: "<<color.h<<std::endl;
 	os<<"Saturation: "<<color.s<<std::endl;
 	os<<"Lightness: "<<color.l<<std::endl;

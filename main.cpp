@@ -75,6 +75,10 @@ Color GetAverageSaturationFromList(const std::list<Color> &colorList){
 int main(int argc, char *argv[]){
 
 	std::list<Color> colorData;
+	
+	enum Mode {mix, lowest, highest, mix_saturate};
+	Mode selectedMode = mix;
+
 
 	// Reading data from file
 	
@@ -94,19 +98,35 @@ int main(int argc, char *argv[]){
 	
 
 	// Reading data from arguments
-	if( argc > 1
-		and (std::string(argv[1]) == "-m" or std::string(argv[1]) == "--mode")
-		and std::string(argv[2]) != "mix-saturate"
-		and std::string(argv[2]) != "mix"
-		and std::string(argv[2]) != "lowest"
-		and std::string(argv[2]) != "highest"
-		){
-		std::cerr<<"Incorrect mode selected aborting program"<<std::endl;
-		return 1;
-	}
 	
 	for (int i = 1; i < argc; i++){
-		colorData.emplace_back(std::string(argv[i]));
+		std::string currentArgument(argv[i]);
+		if ((currentArgument == "-m" or currentArgument == "--mode") and (i + 1) < argc){
+			std::string argumentMode(argv[i+1]);
+			if (argumentMode == "mix") {
+				selectedMode = mix;
+				i++;
+			}
+			else if (argumentMode == "lowest") {
+				selectedMode = lowest;
+				i++;
+			}
+			else if (argumentMode == "highest") {
+				selectedMode = highest;
+				i++;
+			}
+			else if (argumentMode == "mix_saturate") {
+				selectedMode = mix_saturate;
+				i++;
+			}
+			else{
+				selectedMode = mix;
+				i++;
+			}
+		}
+		else{
+			colorData.emplace_back(std::string(argv[i]));
+		}
 	}
 
 
@@ -114,22 +134,24 @@ int main(int argc, char *argv[]){
 		std::cerr<<"You have to provide colors in form of a file or program arguments "<<std::endl;
 		return 1;
 	}
-	if (argc > 1){
-		if (std::string(argv[2]) == "lowest"){ 
-			std::cout<<CreateFromLowestValues(colorData)<<std::endl;
-		}
-		if (std::string(argv[2]) == "highest"){
-			std::cout<<CreateFromHighestValues(colorData)<<std::endl;
-		}
-		if (std::string(argv[2]) == "mix-saturate"){
-			std::cout<<GetAverageSaturationFromList(colorData)<<std::endl;
-		}
-		if (std::string(argv[2]) == "mix"){
+
+	switch(selectedMode){
+		case mix:
 			std::cout<<CreateAverageFromList(colorData)<<std::endl;
-		}
-	}
-	if (std::string(argv[1]) != "-m" or std::string(argv[1]) != "--mode"){
-		std::cout<<CreateAverageFromList(colorData)<<std::endl;
+			break;
+		case lowest:
+			std::cout<<CreateFromLowestValues(colorData)<<std::endl;
+			break;
+		case highest:
+			std::cout<<CreateFromHighestValues(colorData)<<std::endl;
+			break;
+		case mix_saturate:
+			std::cout<<GetAverageSaturationFromList(colorData)<<std::endl;
+			break;
+		default:
+			std::cout<<CreateAverageFromList(colorData)<<std::endl;
+			break;
+
 	}
 
 
