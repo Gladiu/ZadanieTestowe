@@ -115,7 +115,7 @@ int main(int argc, char *argv[]){
 				selectedMode = highest;
 				i++;
 			}
-			else if (argumentMode == "mix_saturate") {
+			else if (argumentMode == "mix-saturate") {
 				selectedMode = mix_saturate;
 				i++;
 			}
